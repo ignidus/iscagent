@@ -41,6 +41,10 @@ skills:
   # AI & agent tooling
   - deep-research
   - mcp-server-patterns
+  # Multi-agent coordination
+  - agent-coordination
+  - agent-teams
+  - model-routing
 
 runtime:
   max_turns: 50

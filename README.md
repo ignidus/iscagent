@@ -146,6 +146,13 @@ See [export/cursor.md](export/cursor.md) for full details.
 | `deep-research` | Multi-source research workflows |
 | `mcp-server-patterns` | Model Context Protocol server patterns |
 
+### Multi-Agent Coordination
+| Skill | What it does |
+|-------|-------------|
+| `agent-coordination` | Memory-based agent communication protocol — how agents hand off work through shared files |
+| `agent-teams` | Team composition templates per task type (bug fix, feature, refactor, security audit, infra change) |
+| `model-routing` | Decision framework for selecting the right model (Haiku/Sonnet/Opus) per task complexity |
+
 ## Project Structure
 
 ```

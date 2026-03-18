@@ -129,8 +129,22 @@ description: Terraform infrastructure management
 author: iscmga
 tags: [terraform, iac, aws]
 tools: [terraform-cli]
+triggers:
+  globs: ["**/*.tf", "**/*.tfvars"]
+  keywords: [terraform, infrastructure, module, state]
 ---
 ```
+
+### Triggers
+
+The `triggers` field makes skills self-describing and discoverable. It tells both humans and tooling when a skill should activate.
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `triggers.globs` | string[] | File patterns that activate this skill (used by Cursor's `.mdc` frontmatter) |
+| `triggers.keywords` | string[] | Task keywords that suggest this skill is relevant |
+
+When exporting to Cursor, `triggers.globs` maps directly to the `globs` field in `.mdc` frontmatter. When exporting to Claude Code, `triggers.keywords` can be included in CLAUDE.md as activation hints.
 
 ## Tools Directory
 
