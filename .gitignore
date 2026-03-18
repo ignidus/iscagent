@@ -1,0 +1,23 @@
+# Runtime state
+.iscagent/
+
+# Environment
+.env
+.env.*
+
+# Secrets
+credentials.json
+*.pem
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Node
+node_modules/
+dist/
