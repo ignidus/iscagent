@@ -2,7 +2,7 @@
 
 Portable AI agent definitions for **Cursor** and **Claude Code**.
 
-Inspired by [gitagent](https://github.com/open-gitagent/gitagent) — adapted to target the two AI coding tools the team uses daily. Clone a repo, get an agent.
+Inspired by [gitagent](https://github.com/open-gitagent/gitagent), with skills sourced from [everything-claude-code](https://github.com/affaan-m/everything-claude-code). Clone a repo, get an agent.
 
 ## Why
 
@@ -12,172 +12,224 @@ AI coding assistants are powerful but their configuration is scattered across to
 
 iscagent provides a **single source of truth** for agent identity, rules, and skills that exports to both formats. Changes are versioned in git, reviewed via PRs, and shared across the team.
 
-## Quick Start
+## How to Use
+
+### 1. Fork or clone this repo
+
+```bash
+git clone https://github.com/ignidus/iscagent.git
+cd iscagent
+```
+
+### 2. Customize for your project
+
+- Edit `SOUL.md` to define your agent's identity and expertise
+- Edit `RULES.md` to set your team's constraints and boundaries
+- Edit `agent.yaml` to pick which skills apply to your project
+
+### 3. Pick the skills you need
+
+The repo ships with 18 general-purpose tech skills. Remove what you don't need, keep what you do:
+
+```yaml
+# agent.yaml — only list skills relevant to your project
+skills:
+  - coding-standards
+  - tdd-workflow
+  - security-review
+  - api-design
+  - docker-patterns
+```
+
+### 4. Add your own skills
+
+Create a new directory under `skills/` with a `SKILL.md`:
+
+```bash
+mkdir -p skills/my-custom-skill
+```
+
+```markdown
+---
+name: my-custom-skill
+version: 1.0.0
+description: What this skill does
+tags: [relevant, tags]
+---
+
+# My Custom Skill
+
+## Trigger
+When to activate (file types, task types, keywords).
+
+## Workflow
+Step-by-step process the agent should follow.
+
+## Conventions
+Team-specific patterns, naming standards, etc.
+```
+
+### 5. Export to your tool
+
+#### Claude Code
+
+Assemble skills into `.claude/CLAUDE.md` for your target project:
+
+```bash
+# Concatenate soul + rules + selected skills
+cat SOUL.md > /path/to/your-project/.claude/CLAUDE.md
+echo -e "\n---\n" >> /path/to/your-project/.claude/CLAUDE.md
+cat RULES.md >> /path/to/your-project/.claude/CLAUDE.md
+for skill in skills/coding-standards skills/tdd-workflow skills/security-review; do
+  echo -e "\n---\n" >> /path/to/your-project/.claude/CLAUDE.md
+  cat "$skill/SKILL.md" >> /path/to/your-project/.claude/CLAUDE.md
+done
+```
+
+See [export/claude-code.md](export/claude-code.md) for full details.
+
+#### Cursor
+
+Generate `.cursor/rules/*.mdc` files with frontmatter:
+
+```bash
+mkdir -p /path/to/your-project/.cursor/rules
+
+# Soul — always active
+printf -- '---\ndescription: Agent identity and values\nalwaysApply: true\n---\n' > /path/to/your-project/.cursor/rules/soul.mdc
+cat SOUL.md >> /path/to/your-project/.cursor/rules/soul.mdc
+
+# Rules — always active
+printf -- '---\ndescription: Hard constraints and boundaries\nalwaysApply: true\n---\n' > /path/to/your-project/.cursor/rules/rules.mdc
+cat RULES.md >> /path/to/your-project/.cursor/rules/rules.mdc
+
+# Skills — triggered by file type
+printf -- '---\ndescription: TDD workflow\nglobs: ["**/*.test.*", "**/*.spec.*"]\nalwaysApply: false\n---\n' > /path/to/your-project/.cursor/rules/tdd-workflow.mdc
+cat skills/tdd-workflow/SKILL.md >> /path/to/your-project/.cursor/rules/tdd-workflow.mdc
+```
+
+See [export/cursor.md](export/cursor.md) for full details.
+
+## Included Skills
+
+### Core Workflow
+| Skill | What it does |
+|-------|-------------|
+| `coding-standards` | Code style, organization, naming conventions |
+| `tdd-workflow` | Test-driven development process |
+| `verification-loop` | Iterative verify-fix cycle for correctness |
+| `search-first` | Research existing code before writing new code |
+| `strategic-compact` | Context window management for long sessions |
+| `eval-harness` | Evaluate and benchmark agent outputs |
+| `project-guidelines-example` | Template for project-specific rules |
+
+### Security
+| Skill | What it does |
+|-------|-------------|
+| `security-review` | OWASP, cloud infrastructure, vulnerability analysis |
+| `security-scan` | Automated security scanning integration |
+
+### Development Patterns
+| Skill | What it does |
+|-------|-------------|
+| `api-design` | REST/GraphQL API design patterns |
+| `backend-patterns` | Server-side architecture patterns |
+| `frontend-patterns` | UI component and state patterns |
+| `database-migrations` | Schema migration workflows |
+| `docker-patterns` | Containerization best practices |
+| `deployment-patterns` | CI/CD and release strategies |
+| `postgres-patterns` | PostgreSQL query and schema patterns |
+
+### AI & Agent Tooling
+| Skill | What it does |
+|-------|-------------|
+| `deep-research` | Multi-source research workflows |
+| `mcp-server-patterns` | Model Context Protocol server patterns |
+
+## Project Structure
 
 ```
 iscagent/
-  agent.yaml          # Agent manifest (required)
-  SOUL.md             # Identity & personality (required)
-  RULES.md            # Hard constraints
-  skills/
-    terraform/SKILL.md
-    aws-ops/SKILL.md
-    ci-cd/SKILL.md
+  agent.yaml              # Agent manifest (required)
+  SOUL.md                 # Identity & personality (required)
+  RULES.md                # Hard constraints
+  skills/                 # Reusable capability modules
+    coding-standards/
+    tdd-workflow/
+    security-review/
+    ...
+  export/                 # Export guides per target
+    claude-code.md
+    cursor.md
+  examples/               # Example agent definitions
+    minimal/              # Two-file hello world
+    infrastructure/       # Full infra agent
+  spec/                   # iscagent specification
+    SPECIFICATION.md
 ```
 
-### Required Files
+## Required Files
 
 | File | Purpose |
 |------|---------|
-| `agent.yaml` | Name, version, model preferences, target runtimes |
-| `SOUL.md` | Who the agent is — identity, values, expertise, style |
+| `agent.yaml` | Name, version, model preferences, target runtimes, skill list |
+| `SOUL.md` | Who the agent is — identity, values, expertise, communication style |
 
-### Optional Files
+## Optional Files
 
 | File/Dir | Purpose |
 |----------|---------|
-| `RULES.md` | Must-always, must-never, output constraints |
+| `RULES.md` | Must-always, must-never, output constraints, scope boundaries |
 | `skills/` | Reusable capability modules with trigger conditions |
 | `tools/` | MCP-compatible tool schemas |
 | `knowledge/` | Reference documents for agent context |
 | `memory/` | Persistent cross-session state |
 
-## Export Targets
+## Creating Your Own Skills
 
-### Claude Code
+Skills follow the [Agent Skills](https://agentskills.io) standard. Each skill is a directory with at minimum a `SKILL.md` file:
 
-Generates `.claude/CLAUDE.md` by merging SOUL + RULES + skills into a single project instructions file. Skills can also export as `.claude/commands/` slash commands.
-
-See [export/claude-code.md](export/claude-code.md) for details.
-
-### Cursor
-
-Generates `.cursor/rules/*.mdc` files with appropriate frontmatter:
-- `soul.mdc` — always active, identity and values
-- `rules.mdc` — always active, hard constraints
-- `{skill}.mdc` — activated by file glob patterns
-
-See [export/cursor.md](export/cursor.md) for details.
-
-## agent.yaml
-
-```yaml
-spec_version: "0.1.0"
-name: infra-agent
-version: 1.0.0
-description: Infrastructure management agent
-author: iscmga
-
-model:
-  preferred: claude-opus-4-6
-  fallback: [claude-sonnet-4-6]
-  constraints:
-    temperature: 0.2
-
-targets:
-  - claude-code
-  - cursor
-
-skills:
-  - terraform
-  - aws-ops
-
-tags:
-  - infrastructure
-  - devops
+```
+skills/
+  my-skill/
+    SKILL.md          # Skill definition (frontmatter + instructions)
+    scripts/           # Optional helper scripts
+    examples/          # Optional few-shot examples
+    references/        # Optional reference docs
 ```
 
-## SOUL.md
-
-Defines who the agent is:
-
-```markdown
-# Soul
-
-## Core Identity
-What the agent does.
-
-## Communication Style
-How it talks (direct, concise, technical).
-
-## Values & Principles
-What it prioritizes (security, cost, simplicity).
-
-## Domain Expertise
-What it knows deeply.
-
-## Collaboration Style
-How it works with humans.
-```
-
-## RULES.md
-
-Defines hard boundaries:
-
-```markdown
-# Rules
-
-## Must Always
-- Read before edit
-- Confirm before destroy
-
-## Must Never
-- Commit secrets
-- Force push to main
-
-## Output Constraints
-- Use file_path:line_number references
-- One sentence where possible
-
-## Scope Boundaries
-- Only workspace and configured accounts
-```
-
-## Skills
-
-Each skill is a directory under `skills/` with a `SKILL.md`:
+The `SKILL.md` frontmatter declares metadata:
 
 ```yaml
 ---
-name: terraform
+name: my-skill
 version: 1.0.0
-description: Terraform infrastructure management
-tags: [terraform, iac, aws]
-tools: [terraform-cli]
+description: One-line description
+author: your-name
+tags: [relevant, tags]
+tools: [tools-it-needs]
 ---
-
-# Terraform Skill
-
-## Trigger
-When to activate this skill.
-
-## Workflow
-Step-by-step process.
-
-## Conventions
-Team-specific patterns and standards.
 ```
 
-## Examples
-
-| Example | Description |
-|---------|-------------|
-| [minimal](examples/minimal/) | Two-file hello world (agent.yaml + SOUL.md) |
-| [infrastructure](examples/infrastructure/) | Full infra agent with skills and rules |
+The body contains the instructions the agent follows when the skill is active.
 
 ## Patterns
-
-Borrowed from gitagent, applicable to iscagent:
 
 - **Agent Versioning** — semver in agent.yaml, git tags for releases
 - **Branch Deployment** — dev/staging/main promotion for agent changes
 - **Shared Context** — root-level skills/tools shared across sub-agents
 - **PR Reviews for Identity** — SOUL.md and RULES.md changes require review
 - **Memory Persistence** — cross-session learning in memory/MEMORY.md
+- **Skill Composition** — combine multiple skills for different project types
 
 ## Specification
 
 Full spec at [spec/SPECIFICATION.md](spec/SPECIFICATION.md).
+
+## Credits
+
+- Structure inspired by [gitagent](https://github.com/open-gitagent/gitagent)
+- Skills sourced from [everything-claude-code](https://github.com/affaan-m/everything-claude-code)
 
 ## License
 
