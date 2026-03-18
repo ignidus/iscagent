@@ -19,7 +19,28 @@ targets:
   - cursor
 
 skills:
-  - skill-creator
+  # Core workflow
+  - coding-standards
+  - tdd-workflow
+  - verification-loop
+  - search-first
+  - strategic-compact
+  - eval-harness
+  - project-guidelines-example
+  # Security
+  - security-review
+  - security-scan
+  # Development patterns
+  - api-design
+  - backend-patterns
+  - frontend-patterns
+  - database-migrations
+  - docker-patterns
+  - deployment-patterns
+  - postgres-patterns
+  # AI & agent tooling
+  - deep-research
+  - mcp-server-patterns
 
 runtime:
   max_turns: 50
