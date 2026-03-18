@@ -18,6 +18,9 @@ targets:
   - claude-code
   - cursor
 
+skills:
+  - skill-creator
+
 runtime:
   max_turns: 50
   timeout: 300
