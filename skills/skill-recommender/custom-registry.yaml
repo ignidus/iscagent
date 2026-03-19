@@ -99,6 +99,22 @@ skills:
       keywords: [api, rest, graphql, endpoint, openapi, swagger]
       layers: [API]
 
+  - name: docs-generation
+    description: Transform knowledge graph into human-readable /docs folder with markdown
+    source: iscagent
+    path: skills/docs-generation/SKILL.md
+    match_signals:
+      keywords: [documentation, docs, readme, onboarding, auto-docs, markdown]
+    always_recommend: true  # every repo benefits from documentation
+
+  - name: knowledge-graph-visualizer
+    description: Generate Mermaid diagrams from knowledge graph (architecture, dependencies, data flow)
+    source: iscagent
+    path: skills/knowledge-graph-visualizer/SKILL.md
+    match_signals:
+      keywords: [diagram, visualize, mermaid, architecture diagram, graph, dependency graph]
+      file_patterns: ["**/knowledge-graph.json"]
+
   - name: deployment-patterns
     description: CI/CD, blue-green, canary, rolling deploys
     source: iscagent

@@ -24,18 +24,19 @@ End-to-end pipeline: understand a codebase deeply, then generate a CLI so agents
 ## Pipeline Overview
 
 ```
-STAGE 1: UNDERSTAND              STAGE 1.5: EQUIP              STAGE 2: GENERATE
-(codebase-understanding)         (skill-recommender)            (cli-generation)
+STAGE 1: UNDERSTAND        STAGE 1.75: DOCUMENT+VISUALIZE    STAGE 1.5: EQUIP         STAGE 2: GENERATE
+(codebase-understanding)   (docs-generation +                 (skill-recommender)       (cli-generation)
+                            knowledge-graph-visualizer)
 
- Scan files                       Read knowledge graph           Analyze knowledge graph
-      |                                |                              |
- Analyze structure  ────────>     Match signals to catalog       Design CLI commands
-      |              knowledge-        |                              |
- Map architecture    graph.json   Recommend skills               Implement CLI
-      |                                |                              |
- Generate tour                    Fetch & install matched        Test & document
-      |                                |                              |
- knowledge-graph.json             .claude/skills/*               Working CLI + SKILL.md
+ Scan files                 Read knowledge graph               Read knowledge graph      Analyze knowledge graph
+      |                          |           |                      |                         |
+ Analyze structure  ──>     Generate docs   Generate diagrams  Match signals to catalog  Design CLI commands
+      |              kg          |           |                      |                         |
+ Map architecture    .json  docs/README.md  docs/diagrams/     Recommend skills          Implement CLI
+      |                     docs/modules/   architecture.md         |                         |
+ Generate tour              docs/AGENTS.md  dependencies.md    Fetch & install matched   Test & document
+      |                     docs/onboard..  data-flow.md            |                         |
+ knowledge-graph.json                       file-map.md        .claude/skills/*          Working CLI + SKILL.md
 ```
 
 ## Workflow
@@ -60,7 +61,26 @@ Run the full codebase-understanding pipeline:
 
 Output: `.understand/knowledge-graph.json`
 
-### Step 2.5: Equip (invoke skill-recommender skill)
+### Step 2.5: Document & Visualize (invoke docs-generation + knowledge-graph-visualizer skills)
+
+Using the knowledge graph, generate human-readable documentation and visual diagrams:
+
+1. **docs-generation** — transforms the knowledge graph into a `/docs` folder:
+   - `docs/README.md` — project overview + table of contents
+   - `docs/architecture.md` — layers, patterns, tech stack
+   - `docs/modules/<layer>.md` — per-layer deep dives
+   - `docs/onboarding.md` — guided tour as prose narrative
+   - `docs/AGENTS.md` — agent-optimized quick reference
+
+2. **knowledge-graph-visualizer** — generates Mermaid diagrams:
+   - `docs/diagrams/architecture.md` — layer overview diagram
+   - `docs/diagrams/dependencies.md` — module dependency graph
+   - `docs/diagrams/data-flow.md` — request/event flow
+   - `docs/diagrams/file-map.md` — directory tree with layer annotations
+
+These two skills can run in parallel since they both read from the knowledge graph independently.
+
+### Step 2.75: Equip (invoke skill-recommender skill)
 
 Using the knowledge graph, search the awesome-agent-skills catalog for relevant skills:
 
@@ -140,6 +160,17 @@ Stage the following for commit:
 .understand/
   knowledge-graph.json     # Codebase understanding
   cli-design.json          # Bridge document (graph -> CLI design)
+docs/
+  README.md                # Project documentation entry point
+  architecture.md          # Architecture overview
+  onboarding.md            # Guided tour as prose
+  AGENTS.md                # Agent-optimized reference
+  modules/                 # Per-layer documentation
+  diagrams/                # Mermaid visualizations
+    architecture.md
+    dependencies.md
+    data-flow.md
+    file-map.md
 <project>-cli/             # Generated CLI
   ...
   skills/
