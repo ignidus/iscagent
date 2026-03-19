@@ -321,6 +321,8 @@ Full spec at [spec/SPECIFICATION.md](spec/SPECIFICATION.md).
 
 - Structure inspired by [gitagent](https://github.com/open-gitagent/gitagent)
 - Skills sourced from [everything-claude-code](https://github.com/affaan-m/everything-claude-code)
+- Repo augmentation methodology extracted from [Understand-Anything](https://github.com/Lum1104/Understand-Anything) and [CLI-Anything](https://github.com/HKUDS/CLI-Anything)
+- Skill recommender catalog powered by [awesome-agent-skills](https://github.com/VoltAgent/awesome-agent-skills)
 
 ## License
 
