@@ -1,62 +1,101 @@
 # Cursor Export Guide
 
-## What Gets Exported
+## How Cursor Rules Work
 
-The `iscagent export --target cursor` command generates:
+Cursor rules live in `.cursor/rules/` as `.md` or `.mdc` files. They're version-controlled with your project.
 
-### .cursor/rules/soul.mdc
+### Rule Types
 
-Generated from **SOUL.md** — the agent's identity, communication style, and values become Cursor's base rule file.
-
-### .cursor/rules/rules.mdc
-
-Generated from **RULES.md** — hard constraints and boundaries applied globally.
-
-### .cursor/rules/{skill}.mdc
-
-Each skill in `skills/` exports a dedicated rule file:
-- `skills/terraform/` → `.cursor/rules/terraform.mdc`
-- `skills/aws-ops/` → `.cursor/rules/aws-ops.mdc`
-- `skills/ci-cd/` → `.cursor/rules/ci-cd.mdc`
+| Type | Frontmatter | When Applied |
+|------|-------------|--------------|
+| **Always Apply** | `alwaysApply: true` | Every session |
+| **Apply Intelligently** | `alwaysApply: false` + `description` | Agent decides based on description |
+| **Apply to Specific Files** | `globs: ["**/*.ts"]` | When matching files are open |
+| **Apply Manually** | No frontmatter, or `alwaysApply: false` | Only when @-mentioned in chat |
 
 ### .mdc File Format
 
-Cursor rule files use frontmatter:
-
-```markdown
+```yaml
 ---
-description: Brief description of this rule
+description: "Concise summary so the agent knows when this rule is relevant"
 globs: ["**/*.tf", "*.tfvars"]
 alwaysApply: false
 ---
 
-Rule content here...
+Rule content here (markdown)...
 ```
 
-- `globs` — file patterns that trigger this rule
-- `alwaysApply: true` — for soul/rules that always apply
-- `alwaysApply: false` — for skills triggered by file type
+Keep rules under 500 lines. Split larger ones into multiple composable rules.
 
-## Manual Assembly
+## Installing iscagent Skills as Cursor Rules
+
+### All skills
 
 ```bash
-mkdir -p .cursor/rules
+mkdir -p /path/to/your-project/.cursor/rules
 
-# Soul — always active
-cat > .cursor/rules/soul.mdc << 'EOF'
+for skill_dir in skills/*/; do
+  skill_name=$(basename "$skill_dir")
+  skill_file="$skill_dir/SKILL.md"
+  [ -f "$skill_file" ] || continue
+
+  # Extract globs from SKILL.md frontmatter if present
+  globs=$(grep -A1 'globs:' "$skill_file" | tail -1 | sed 's/^[ ]*//')
+
+  # Write .mdc with frontmatter
+  cat > "/path/to/your-project/.cursor/rules/${skill_name}.mdc" << EOF
 ---
-description: Agent identity and values
-alwaysApply: true
+description: $(grep '^description:' "$skill_file" | sed 's/^description: //')
+alwaysApply: false
 ---
 EOF
-cat SOUL.md >> .cursor/rules/soul.mdc
-
-# Rules — always active
-cat > .cursor/rules/rules.mdc << 'EOF'
----
-description: Hard constraints and boundaries
-alwaysApply: true
----
-EOF
-cat RULES.md >> .cursor/rules/rules.mdc
+  # Strip YAML frontmatter from SKILL.md and append content
+  sed '1,/^---$/{ /^---$/,/^---$/d }' "$skill_file" >> "/path/to/your-project/.cursor/rules/${skill_name}.mdc"
+done
 ```
+
+### Specific skills
+
+```bash
+# Example: install just security-review as an always-apply rule
+cat > .cursor/rules/security-review.mdc << 'EOF'
+---
+description: "Security review checklist for auth, user input, secrets, APIs"
+alwaysApply: true
+---
+EOF
+sed '1,/^---$/{ /^---$/,/^---$/d }' skills/security-review/SKILL.md >> .cursor/rules/security-review.mdc
+```
+
+### With glob triggers
+
+Some skills have natural file-pattern triggers:
+
+```bash
+# Docker patterns — triggered by Docker files
+cat > .cursor/rules/docker-patterns.mdc << 'EOF'
+---
+description: "Docker and container best practices"
+globs: ["**/Dockerfile", "**/docker-compose*.yml", "**/.dockerignore"]
+alwaysApply: false
+---
+EOF
+sed '1,/^---$/{ /^---$/,/^---$/d }' skills/docker-patterns/SKILL.md >> .cursor/rules/docker-patterns.mdc
+```
+
+## Alternative: AGENTS.md
+
+For simpler setups, Cursor also supports `AGENTS.md` files:
+- Place `AGENTS.md` at the project root for global instructions
+- Place `AGENTS.md` in subdirectories for scoped instructions
+- No frontmatter needed — just plain markdown
+- More specific (deeper) files take precedence
+
+## Best Practices
+
+- Keep each rule under 500 lines
+- Use `description` field so the agent can decide relevance intelligently
+- Use `globs` for file-type-specific skills (docker, terraform, database)
+- Use `alwaysApply: true` sparingly — only for universal standards like security
+- Point to canonical examples rather than copying full code into rules
+- Nest rules in subdirectories for organization if needed

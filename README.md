@@ -213,27 +213,15 @@ iscagent/
     claude-code.md        # Claude Code export guide
     cursor.md             # Cursor export guide
   examples/               # Example configurations
-    minimal/              # Two-file starter
+    minimal/              # Starter config
   spec/                   # iscagent specification
     SPECIFICATION.md
 ```
 
-## Agent Definition (Optional)
+## Export Guides
 
-For teams that want a full agent identity beyond just skills, iscagent supports optional configuration files:
-
-| File | Purpose |
-|------|---------|
-| `agent.yaml` | Name, version, model preferences, target runtimes, skill list |
-| `SOUL.md` | Agent identity — expertise, communication style, values |
-| `RULES.md` | Hard constraints — must-always, must-never, scope boundaries |
-
-These can be assembled into tool-specific formats:
-
-- **Claude Code**: Merged into `.claude/CLAUDE.md` — see [export/claude-code.md](export/claude-code.md)
-- **Cursor**: Split into `.cursor/rules/*.mdc` files — see [export/cursor.md](export/cursor.md)
-
-This is useful when you want a consistent agent personality across tools, or when your team reviews agent behavior changes via PRs.
+- **[Claude Code](export/claude-code.md)** — Install to `~/.claude/skills/` or `.claude/skills/`
+- **[Cursor](export/cursor.md)** — Export as `.cursor/rules/*.mdc` with frontmatter (globs, description, alwaysApply)
 
 ## Credits
 

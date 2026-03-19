@@ -1,43 +1,36 @@
-# iscagent Specification v0.1.0
+# iscagent Specification v0.2.0
 
 ## Overview
 
-iscagent is a portable AI agent definition format targeting **Cursor** and **Claude Code** as runtime environments. It follows the gitagent philosophy — "clone a repo, get an agent" — but scopes the specification to the two tools the team actually uses.
+iscagent is a skills library and repo augmentation framework for AI coding agents. It provides reusable skill modules that teach agents methodologies, patterns, and workflows — plus a pipeline for understanding codebases and generating agent-native CLIs.
 
-Agent definitions are git-native: versioned, diffable, branchable, and reviewable through standard pull request workflows.
+Skills are git-native: versioned, diffable, branchable, and reviewable through standard pull request workflows.
+
+Compatible with Claude Code, Cursor, and any agent that reads markdown instructions.
 
 ## Required Files
 
 | File | Purpose |
 |------|---------|
-| `agent.yaml` | Agent manifest (name, version, model, targets, tags) |
-| `SOUL.md` | Identity document (personality, values, expertise, style) |
-
-## Optional Files
-
-| File | Purpose |
-|------|---------|
-| `RULES.md` | Hard constraints and safety boundaries |
-| `AGENTS.md` | Framework-agnostic fallback instructions |
+| `agent.yaml` | Skill registry, model preferences, metadata |
 
 ## Optional Directories
 
 | Directory | Purpose |
 |-----------|---------|
-| `skills/` | Reusable capability modules |
+| `skills/` | Reusable capability modules (SKILL.md + supporting files) |
 | `tools/` | MCP-compatible tool schemas |
 | `knowledge/` | Reference documents for agent consultation |
 | `memory/` | Persistent cross-session state |
-| `hooks/` | Event handlers (bootstrap, teardown) |
-| `config/` | Environment-specific overrides |
+| `export/` | Installation scripts and export guides per target tool |
 
 ## agent.yaml Schema
 
 ```yaml
-spec_version: "0.1.0"           # Required
+spec_version: "0.2.0"           # Required
 name: my-agent                   # Required — kebab-case identifier
 version: 1.0.0                   # Required — semver
-description: What the agent does # Required
+description: What this does      # Required
 author: team-or-individual       # Optional
 license: MIT                     # Optional
 
@@ -49,13 +42,14 @@ model:                           # Optional
     temperature: 0.3
     max_tokens: 8192
 
-targets:                         # Required — at least one
+targets:                         # Optional — tool compatibility
   - claude-code
   - cursor
 
-skills:                          # Optional — list of skill directory names
-  - terraform
-  - aws-ops
+skills:                          # Required — list of skill directory names
+  - coding-standards
+  - tdd-workflow
+  - repo-augmentation
 
 tools:                           # Optional — list of tool definition names
   - aws-api
@@ -65,114 +59,112 @@ runtime:                         # Optional
   timeout: 300
 
 tags:                            # Optional
-  - infrastructure
-```
-
-## SOUL.md Structure
-
-```markdown
-# Soul
-
-## Core Identity
-Who the agent is and what it does.
-
-## Communication Style
-How it communicates (tone, verbosity, format).
-
-## Values & Principles
-What it prioritizes (security, cost, simplicity).
-
-## Domain Expertise
-What it knows deeply.
-
-## Collaboration Style
-How it works with humans (confirmations, PR style, etc).
-```
-
-## RULES.md Structure
-
-```markdown
-# Rules
-
-## Must Always
-Mandatory behaviors.
-
-## Must Never
-Prohibited actions.
-
-## Output Constraints
-Formatting and response rules.
-
-## Scope Boundaries
-What the agent should not touch.
+  - web-development
 ```
 
 ## Skills Directory
 
-Each skill is a subdirectory of `skills/` containing:
+Each skill is a subdirectory of `skills/` containing at minimum a `SKILL.md`:
 
 ```
 skills/
-  terraform/
+  my-skill/
     SKILL.md          # Skill definition (frontmatter + instructions)
     scripts/           # Optional executable scripts
     examples/          # Optional few-shot examples
+    references/        # Optional reference docs
+    *.yaml             # Optional supporting config (e.g., custom-registry.yaml)
 ```
 
 ### SKILL.md Frontmatter
 
 ```yaml
 ---
-name: terraform
+name: my-skill
 version: 1.0.0
-description: Terraform infrastructure management
-author: iscmga
-tags: [terraform, iac, aws]
-tools: [terraform-cli]
+description: One-line description of what this skill does
+author: author-name
+tags: [relevant, tags]
+tools: [tools-it-needs]
 triggers:
   globs: ["**/*.tf", "**/*.tfvars"]
-  keywords: [terraform, infrastructure, module, state]
+  keywords: [terraform, infrastructure, module]
 ---
 ```
 
+### Frontmatter Fields
+
+| Field | Type | Required | Purpose |
+|-------|------|----------|---------|
+| `name` | string | Yes | Unique skill identifier (kebab-case) |
+| `version` | string | Yes | Semver version |
+| `description` | string | Yes | One-line description |
+| `author` | string | No | Skill author |
+| `tags` | string[] | No | Categorization tags |
+| `tools` | string[] | No | External tools the skill needs |
+| `triggers.globs` | string[] | No | File patterns that activate this skill |
+| `triggers.keywords` | string[] | No | Keywords that suggest relevance |
+
 ### Triggers
 
-The `triggers` field makes skills self-describing and discoverable. It tells both humans and tooling when a skill should activate.
+The `triggers` field makes skills self-describing and discoverable:
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `triggers.globs` | string[] | File patterns that activate this skill (used by Cursor's `.mdc` frontmatter) |
-| `triggers.keywords` | string[] | Task keywords that suggest this skill is relevant |
+- **`triggers.globs`** — File patterns. Maps to Cursor's `.mdc` `globs` frontmatter. Used for file-type-specific activation.
+- **`triggers.keywords`** — Task keywords. Used by Claude Code for intelligent skill suggestion. Used by the skill-recommender for matching against knowledge graphs.
 
-When exporting to Cursor, `triggers.globs` maps directly to the `globs` field in `.mdc` frontmatter. When exporting to Claude Code, `triggers.keywords` can be included in CLAUDE.md as activation hints.
+### SKILL.md Body
 
-## Tools Directory
+The body contains the instructions the agent follows. Recommended sections:
 
-MCP-compatible tool definitions:
+```markdown
+# Skill Name
 
-```
-tools/
-  aws-api/
-    tool.yaml         # Tool schema
-    README.md          # Usage documentation
+## When to Activate
+Conditions that trigger this skill.
+
+## Workflow
+Step-by-step process the agent should follow.
+
+## Anti-Patterns
+Common mistakes to avoid.
+
+## Integration Points
+How this skill connects to other skills.
 ```
 
 ## Export Targets
 
 ### Claude Code
 
-Exports to:
-- `.claude/CLAUDE.md` — merged from SOUL.md + RULES.md + skill instructions
-- `.claude/settings.json` — permissions derived from tools and rules
-- `.claude/commands/` — skills exported as slash commands
+Skills install to:
+- `~/.claude/skills/<skill>/SKILL.md` — user-level (all sessions)
+- `.claude/skills/<skill>/SKILL.md` — project-level (one repo)
+
+Use `export/install-skills.sh` for installation.
 
 ### Cursor
 
-Exports to:
-- `.cursor/rules/` — rule files derived from SOUL.md + RULES.md
-- `.cursor/rules/soul.mdc` — identity and behavior
-- `.cursor/rules/rules.mdc` — constraints and boundaries
-- `.cursor/rules/{skill}.mdc` — one file per skill
+Skills export as `.cursor/rules/<skill>.mdc` files with frontmatter:
+
+```yaml
+---
+description: "Skill description for intelligent application"
+globs: ["**/*.ts"]      # from triggers.globs
+alwaysApply: false
+---
+```
+
+Cursor rule types:
+- **Always Apply** (`alwaysApply: true`) — every session
+- **Apply Intelligently** (`alwaysApply: false` + `description`) — agent decides
+- **Apply to Specific Files** (`globs`) — file pattern matching
+- **Apply Manually** — only when @-mentioned
+
+See `export/cursor.md` for installation instructions.
+
+### AGENTS.md (Framework-agnostic)
+
+For tools that support it, skills can be concatenated into an `AGENTS.md` file at the project root. Subdirectory `AGENTS.md` files provide scoped instructions.
 
 ## Memory
 
@@ -189,18 +181,16 @@ Memory files persist across conversations. Agents should:
 
 ## Versioning
 
-All changes to agent definitions go through git:
+All changes go through git:
 - Semantic versioning in agent.yaml
 - Git tags for releases (v1.0.0)
-- Branch-based promotion (dev → staging → main)
-- PR reviews for identity/rule changes
+- PR reviews for skill changes
 
 ## Validation
 
-An agent definition is valid when:
-1. `agent.yaml` exists and has required fields
-2. `SOUL.md` exists and is non-empty
-3. At least one target is specified
-4. All referenced skills exist in `skills/`
-5. All referenced tools exist in `tools/`
-6. MEMORY.md is under 200 lines
+A valid iscagent configuration requires:
+1. `agent.yaml` exists with required fields (name, version, description)
+2. All skills listed in `agent.yaml` exist in `skills/`
+3. Each referenced skill has a `SKILL.md` with valid frontmatter (name, version, description)
+4. All referenced tools exist in `tools/`
+5. MEMORY.md, if present, is under 200 lines
