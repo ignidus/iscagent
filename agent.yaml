@@ -41,6 +41,11 @@ skills:
   # AI & agent tooling
   - deep-research
   - mcp-server-patterns
+  # Repo augmentation (understand + CLI + skill discovery)
+  - codebase-understanding
+  - cli-generation
+  - repo-augmentation
+  - skill-recommender
   # Multi-agent coordination
   - agent-coordination
   - agent-teams

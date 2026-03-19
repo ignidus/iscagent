@@ -1,0 +1,144 @@
+# Custom Skill Registry
+# Skills listed here supplement the awesome-agent-skills catalog.
+# These are either iscagent-native skills, private skills, or skills
+# from sources not covered by the external catalog.
+#
+# To add a skill:
+#   1. Add an entry below with match_signals
+#   2. Set source to "iscagent" (local), "github" (fetch), or "claude-code" (existing slash skill)
+#   3. The skill-recommender will include these in its search
+
+skills:
+  # --- PHP / Laravel ---
+  - name: technical-debt-manager-php-laravel
+    description: Expert technical debt analyst for PHP/Laravel code health, maintainability, and strategic refactoring planning
+    source: claude-code
+    invoke: /technical-debt-manager-php-laravel
+    match_signals:
+      languages: [php]
+      frameworks: [laravel, lumen, symfony]
+      keywords: [tech debt, refactor, legacy, maintainability, code health, migration]
+    confidence_boost: 2  # extra weight when matched (PHP + Laravel = high confidence)
+
+  - name: php-plesk
+    description: Expert PHP development for Plesk integration, PSR standards, security, testing
+    source: claude-code
+    invoke: /php-plesk
+    match_signals:
+      languages: [php]
+      frameworks: [plesk]
+      keywords: [plesk, hosting, psr, phpunit, pest]
+
+  # --- UI/UX ---
+  - name: ui-ux-pro-max
+    description: UI/UX design patterns and best practices for production interfaces
+    source: github
+    url: https://github.com/nextlevelbuilder/ui-ux-pro-max-skill
+    match_signals:
+      languages: [typescript, javascript, html, css]
+      frameworks: [react, vue, angular, svelte, nextjs, nuxt, tailwind]
+      keywords: [ui, ux, design, frontend, components, accessibility, responsive]
+      layers: [UI, Frontend]
+    confidence_boost: 1
+
+  # --- iscagent built-in skills (always available, no fetch needed) ---
+  - name: codebase-understanding
+    description: Systematic codebase analysis that builds a knowledge graph
+    source: iscagent
+    path: skills/codebase-understanding/SKILL.md
+    match_signals:
+      keywords: [understand, analyze, onboard, architecture, documentation]
+    always_recommend: true  # useful for any repo
+
+  - name: cli-generation
+    description: Generate stateful agent-native CLI interfaces for any codebase
+    source: iscagent
+    path: skills/cli-generation/SKILL.md
+    match_signals:
+      keywords: [cli, tooling, automation, agent-native]
+
+  - name: security-review
+    description: OWASP, cloud security, dependency vulnerability checks
+    source: iscagent
+    path: skills/security-review/SKILL.md
+    match_signals:
+      keywords: [security, auth, api, production, deployment]
+      layers: [API, Auth, Infrastructure]
+    always_recommend: true
+
+  - name: tdd-workflow
+    description: Test-driven development workflow
+    source: iscagent
+    path: skills/tdd-workflow/SKILL.md
+    match_signals:
+      keywords: [testing, test, tdd, jest, pytest, phpunit, vitest]
+      layers: [Testing]
+
+  - name: docker-patterns
+    description: Container best practices
+    source: iscagent
+    path: skills/docker-patterns/SKILL.md
+    match_signals:
+      keywords: [docker, container, kubernetes, k8s, compose]
+      file_patterns: ["Dockerfile", "docker-compose.yml", ".dockerignore"]
+
+  - name: postgres-patterns
+    description: PostgreSQL query and schema patterns
+    source: iscagent
+    path: skills/postgres-patterns/SKILL.md
+    match_signals:
+      frameworks: [prisma, typeorm, sequelize, eloquent, knex, drizzle]
+      keywords: [postgres, postgresql, database, sql, migration]
+      layers: [Data]
+
+  - name: api-design
+    description: REST/GraphQL API design patterns
+    source: iscagent
+    path: skills/api-design/SKILL.md
+    match_signals:
+      keywords: [api, rest, graphql, endpoint, openapi, swagger]
+      layers: [API]
+
+  - name: deployment-patterns
+    description: CI/CD, blue-green, canary, rolling deploys
+    source: iscagent
+    path: skills/deployment-patterns/SKILL.md
+    match_signals:
+      keywords: [deploy, ci, cd, pipeline, github actions, gitlab]
+      file_patterns: [".github/workflows/", ".gitlab-ci.yml", "Jenkinsfile"]
+
+  - name: frontend-patterns
+    description: UI component and state patterns
+    source: iscagent
+    path: skills/frontend-patterns/SKILL.md
+    match_signals:
+      languages: [typescript, javascript]
+      frameworks: [react, vue, angular, svelte]
+      layers: [UI, Frontend]
+
+  - name: mcp-server-patterns
+    description: Model Context Protocol server development
+    source: iscagent
+    path: skills/mcp-server-patterns/SKILL.md
+    match_signals:
+      keywords: [mcp, model context protocol, tool server, ai integration]
+
+# -------------------------------------------------------
+# HOW TO ADD CUSTOM SKILLS
+# -------------------------------------------------------
+# Copy one of the entries above and modify:
+#
+# - name: my-skill                    # unique identifier
+#   description: What it does         # one line
+#   source: github | iscagent | claude-code | url
+#   url: https://...                  # if source is github/url
+#   path: skills/my-skill/SKILL.md   # if source is iscagent
+#   invoke: /my-skill                 # if source is claude-code
+#   match_signals:
+#     languages: [python, rust]       # match against knowledge graph languages
+#     frameworks: [django, flask]     # match against detected frameworks
+#     keywords: [api, auth]           # match against node tags and descriptions
+#     layers: [API, Data]             # match against architecture layers
+#     file_patterns: ["Makefile"]     # match against file names in the repo
+#   confidence_boost: 0               # extra score (0-3) when matched
+#   always_recommend: false           # true = recommend for every repo
