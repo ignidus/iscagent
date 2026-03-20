@@ -13,8 +13,10 @@ YOU                          CLAUDE + ISCAGENT                    TARGET REPO
 ───                          ─────────────────                    ───────────
 "Augment this repo"  ──>     Phase 1: Understand codebase   ──>  .understand/knowledge-graph.json
                              Phase 2: Generate docs          ──>  docs/ (architecture, onboarding, agent ref)
-                             Phase 3: Install skills         ──>  .claude/skills/ or .cursor/rules/
-                             Phase 4: Write project config   ──>  CLAUDE.md or .cursor/rules/project.mdc
+                             Phase 3: Install skills         ──>  .claude/skills/ + .cursor/rules/
+                             Phase 4: Write project config   ──>  CLAUDE.md + .cursor/rules/project.mdc
+                             Phase 5: Validate               ──>  verify all artifacts
+                             Phase 6: Commit                 ──>  feature/iscagent-augmentation branch
 ```
 
 The output is a repo where Claude (or Cursor) knows:
@@ -147,17 +149,24 @@ target-repo/
     onboarding.md                 # Guided tour for new developers
     AGENTS.md                     # Agent-optimized quick reference
     modules/<layer>.md            # Per-layer deep dives
-  .claude/skills/                 # (Claude Code) or .cursor/rules/ (Cursor)
-    coding-standards/SKILL.md     # Selected skills based on codebase signals
+  .claude/skills/                 # Skills for Claude Code
+    coding-standards/SKILL.md
     review/SKILL.md
     ship/SKILL.md
     careful/SKILL.md
     ...
-  CLAUDE.md                       # (Claude Code) or .cursor/rules/project.mdc (Cursor)
-                                  # Project-specific: commands, architecture, workflow
+  .cursor/rules/                  # Skills for Cursor
+    coding-standards.mdc
+    review.mdc
+    ship.mdc
+    careful.mdc
+    project.mdc                   # Project-specific Cursor config
+    ...
+  CLAUDE.md                       # Project-specific Claude Code config
+                                  # Commands, architecture, workflow instructions
 ```
 
-The `CLAUDE.md` (or Cursor project rule) is the key output — it contains:
+Both `CLAUDE.md` and `.cursor/rules/project.mdc` are generated so developers can use either tool. They contain:
 - Project overview and tech stack
 - Architecture summary (from knowledge graph)
 - Development commands (detected from Makefile, package.json, etc.)

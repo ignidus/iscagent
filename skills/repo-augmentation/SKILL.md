@@ -23,33 +23,28 @@ When you're done, an agent opening the repo will have everything it needs — pr
 - "Onboard this codebase"
 - When preparing any repo for AI-assisted development
 
-## Target Tool Detection
-
-Determine the target tool by checking what exists:
-
-| Signal | Target |
-|--------|--------|
-| `.claude/` directory exists or user says "Claude" | Claude Code |
-| `.cursor/` directory exists or user says "Cursor" | Cursor |
-| Both exist | Ask user which to configure |
-| Neither exists | Default to Claude Code |
-
 ## Pipeline
 
 ```
 PHASE 1: UNDERSTAND          PHASE 2: DOCUMENT           PHASE 3: EQUIP              PHASE 4: CONFIGURE
 ─────────────────            ────────────────             ──────────────              ──────────────────
-Scan the codebase            Generate docs/               Install skills              Write CLAUDE.md or
-Build knowledge graph        Architecture overview         Select based on             Cursor rules
+Scan the codebase            Generate docs/               Install skills              Configure BOTH:
+Build knowledge graph        Architecture overview         Select based on             Claude Code + Cursor
 Map architecture             Onboarding guide              codebase signals            Project-specific
 Generate guided tour         Agent reference               Engineering workflow        instructions
 
-.understand/                 docs/                        .claude/skills/ OR          CLAUDE.md OR
-  knowledge-graph.json         README.md                    .cursor/rules/              .cursor/rules/
-                               architecture.md                                          project.mdc
+.understand/                 docs/                        .claude/skills/             CLAUDE.md
+  knowledge-graph.json         README.md                  .cursor/rules/              .cursor/rules/
+                               architecture.md              (both targets)              project.mdc
                                onboarding.md
                                AGENTS.md
                                modules/
+
+PHASE 5: VALIDATE            PHASE 6: COMMIT
+──────────────────           ───────────────
+Verify all artifacts         Create feature branch
+Test dev commands            Commit all artifacts
+Check completeness           feature/iscagent-augmentation
 ```
 
 ## Phase 1: Understand the Codebase
@@ -109,42 +104,51 @@ Select and install skills based on what the codebase actually needs. Read the kn
 | Complex architecture (>100 files, >5 layers) | `investigate`, `plan-review`, `retro` |
 | MCP server code | `mcp-server-patterns` |
 
-### Install Location
+### Install to BOTH Targets
 
-**Claude Code:**
+Always install skills for both Claude Code and Cursor so developers can use either tool:
+
+**Claude Code** — one directory per skill:
 ```
 <repo>/.claude/skills/<skill-name>/SKILL.md
 ```
 
-**Cursor:**
+**Cursor** — one `.mdc` file per skill with frontmatter:
 ```
 <repo>/.cursor/rules/<skill-name>.mdc
 ```
 
-For Cursor, wrap each SKILL.md with frontmatter:
+For each Cursor rule file, wrap the SKILL.md content with frontmatter:
 ```yaml
 ---
-description: "<skill description>"
-globs: <from skill triggers.globs, or omit>
+description: "<skill description from SKILL.md frontmatter>"
+globs: <from skill triggers.globs, or omit if empty>
 alwaysApply: false
 ---
-<SKILL.md contents>
+<SKILL.md body contents>
 ```
 
 ### How to Install
 
 Copy skill files from the iscagent source. If iscagent is cloned locally:
 ```bash
-cp -r <iscagent>/skills/<skill-name>/SKILL.md <repo>/.claude/skills/<skill-name>/SKILL.md
+# Claude Code
+mkdir -p <repo>/.claude/skills/<skill-name>
+cp <iscagent>/skills/<skill-name>/SKILL.md <repo>/.claude/skills/<skill-name>/SKILL.md
+
+# Cursor
+mkdir -p <repo>/.cursor/rules
+printf -- '---\ndescription: %s\nalwaysApply: false\n---\n' "<description>" > <repo>/.cursor/rules/<skill-name>.mdc
+cat <iscagent>/skills/<skill-name>/SKILL.md >> <repo>/.cursor/rules/<skill-name>.mdc
 ```
 
 If not available locally, write the skill content directly based on the skill definitions in this repository.
 
 ## Phase 4: Configure Project Instructions
 
-Generate a project-specific instruction file that tells the agent everything it needs to know about THIS repo.
+Generate project-specific instruction files for **both** Claude Code and Cursor. Developers use both tools — the repo should be ready for either.
 
-### For Claude Code: Generate `CLAUDE.md`
+### 4a: Generate `CLAUDE.md`
 
 Create `<repo>/CLAUDE.md` at the project root:
 
@@ -194,15 +198,18 @@ Create `<repo>/CLAUDE.md` at the project root:
 - <Deployment targets>
 ```
 
-### For Cursor: Generate `.cursor/rules/project.mdc`
+### 4b: Generate `.cursor/rules/project.mdc`
+
+Create the Cursor equivalent with the same content wrapped in frontmatter:
 
 ```yaml
 ---
 description: "Project-specific rules for <project name>"
 alwaysApply: true
 ---
-<Same content as CLAUDE.md above, adapted for Cursor context>
 ```
+
+The body content is the same as the CLAUDE.md above. Both files must stay in sync — they describe the same project.
 
 ## Phase 5: Validate
 
@@ -211,33 +218,67 @@ Run a validation pass on everything generated:
 - [ ] `.understand/knowledge-graph.json` exists and is valid JSON
 - [ ] `docs/README.md` exists and has content
 - [ ] `docs/AGENTS.md` exists and lists all files from the knowledge graph
-- [ ] Skills are installed in the correct location for the target tool
-- [ ] Each installed skill has a valid SKILL.md with frontmatter
-- [ ] `CLAUDE.md` or `.cursor/rules/project.mdc` exists with project-specific config
-- [ ] Development commands in the config file are accurate (test at least one)
+- [ ] `.claude/skills/` has SKILL.md files for each installed skill
+- [ ] `.cursor/rules/` has `.mdc` files for each installed skill
+- [ ] `CLAUDE.md` exists with project-specific config
+- [ ] `.cursor/rules/project.mdc` exists with project-specific config
+- [ ] Development commands in the config files are accurate (test at least one)
 - [ ] No broken internal links in docs
 
-## Phase 6: Commit
+## Phase 6: Commit to Feature Branch
 
-Stage all artifacts and present to the user:
+Create a feature branch, stage all artifacts, and commit automatically:
+
+```bash
+# Create feature branch from current branch
+git checkout -b feature/iscagent-augmentation
+
+# Stage all augmentation artifacts
+git add .understand/
+git add docs/
+git add .claude/skills/
+git add .cursor/rules/
+git add CLAUDE.md
+
+# Commit
+git commit -m "feat: augment repo for AI-assisted development
+
+Adds:
+- .understand/knowledge-graph.json (codebase understanding)
+- docs/ (architecture, onboarding, agent reference)
+- .claude/skills/ (N skills for Claude Code)
+- .cursor/rules/ (N rules for Cursor)
+- CLAUDE.md (project configuration for Claude Code)
+- .cursor/rules/project.mdc (project configuration for Cursor)
+
+Generated by iscagent repo-augmentation v2.0"
+```
+
+After committing, report what was done:
 
 ```
-Artifacts generated:
+AUGMENTATION COMPLETE
+
+Branch: feature/iscagent-augmentation
+Commit: <hash>
+
+Artifacts:
   .understand/knowledge-graph.json    — Codebase understanding
-  docs/                               — Human + agent documentation (N files)
-  .claude/skills/ OR .cursor/rules/   — N skills installed
-  CLAUDE.md OR .cursor/rules/project.mdc — Project configuration
+  docs/                               — N documentation files
+  .claude/skills/                     — N skills (Claude Code)
+  .cursor/rules/                      — N rules (Cursor)
+  CLAUDE.md                           — Project config (Claude Code)
+  .cursor/rules/project.mdc           — Project config (Cursor)
 
-Ready to commit. Suggested message:
-  "feat: augment repo for AI-assisted development"
+Next steps:
+  git push -u origin feature/iscagent-augmentation
+  # Then create a PR for review
 ```
-
-Wait for user confirmation before committing.
 
 ## Full Example
 
 ```
-User: "Augment this repo for Claude Code"
+User: "Augment this repo"
 
 Phase 1 — UNDERSTAND
   Scanning 142 files...
@@ -258,19 +299,23 @@ Phase 2 — DOCUMENT
   docs/onboarding.md ✓
   docs/AGENTS.md ✓
 
-Phase 3 — EQUIP (12 skills)
+Phase 3 — EQUIP (12 skills × 2 targets)
   Always: coding-standards, review, ship, careful, verification-loop, security-review
   Detected: tdd-workflow (phpunit found), database-migrations (migrations/ dir),
             api-design (routes/ dir), frontend-patterns (Vue components),
             backend-patterns (Laravel), postgres-patterns (Eloquent)
+  Installed to: .claude/skills/ (12 skills) + .cursor/rules/ (12 rules)
 
 Phase 4 — CONFIGURE
   CLAUDE.md ✓ (test: php artisan test, lint: ./vendor/bin/pint, dev: php artisan serve)
+  .cursor/rules/project.mdc ✓
 
 Phase 5 — VALIDATE
   All checks pass ✓
 
-Ready to commit.
+Phase 6 — COMMIT
+  Branch: feature/iscagent-augmentation
+  Commit: abc1234 "feat: augment repo for AI-assisted development"
 ```
 
 ## Execution Strategy
@@ -287,7 +332,7 @@ Ready to commit.
 - **Generic CLAUDE.md**: The config file must be specific to THIS repo — actual commands, actual conventions, actual architecture.
 - **Skipping validation**: Always verify that installed skills have valid SKILL.md files and that development commands actually work.
 - **Augmenting without understanding**: Don't install skills or write config without first building the knowledge graph. You'll miss what the repo actually needs.
-- **One config for both tools**: Claude Code and Cursor have different formats. Generate the right one for the target tool.
+- **Only configuring one tool**: Always generate for both Claude Code and Cursor. Developers switch between tools — the repo should be ready for either.
 
 ## Integration Points
 
