@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Automated skill recommender for the iscagent repo augmentation pipeline.
 
-Reads a knowledge graph, extracts signals, matches against:
+Reads a knowledge graph AND generated docs/ folder, extracts signals, matches against:
   1. custom-registry.yaml (iscagent built-in + curated skills)
   2. awesome-agent-skills catalog (549+ community skills, fetched live)
+
+The docs/ folder (generated in Stage 2) provides richer prose signals that improve
+matching accuracy — domain terms, architectural patterns, and integration details
+that may not be captured in the knowledge graph's structured fields.
 
 Installs only matched skills into the target repo's .claude/skills/.
 
@@ -141,6 +145,72 @@ def extract_signals(graph):
     signals["tags"] = list(signals["tags"])
     signals["file_patterns"] = list(signals["file_patterns"])
     signals["keywords"] = list(signals["keywords"])
+
+    return signals
+
+
+# ─── Docs signal extraction ──────────────────────────────────────
+
+def extract_docs_signals(docs_dir, signals):
+    """Enrich signals by scanning generated docs/ folder for additional domain terms.
+
+    The docs contain prose descriptions of architecture, integrations, patterns,
+    and design decisions that may surface keywords not present in the knowledge
+    graph's structured metadata.
+    """
+    if not docs_dir.exists():
+        return signals
+
+    # Read all markdown files in docs/
+    docs_text = []
+    for md_file in docs_dir.rglob("*.md"):
+        try:
+            content = md_file.read_text(errors="ignore").lower()
+            docs_text.append(content)
+        except Exception:
+            continue
+
+    if not docs_text:
+        return signals
+
+    combined = " ".join(docs_text)
+
+    # Domain probes that docs might surface beyond what the knowledge graph captured
+    docs_probes = {
+        "compliance": ["compliance", "regulatory", "audit trail", "sox", "hipaa", "pci", "gdpr"],
+        "caching": ["cache", "redis", "memcached", "caching layer", "session cache"],
+        "queue": ["queue", "worker", "background job", "async processing", "job queue"],
+        "monitoring": ["monitoring", "alerting", "observability", "logging", "health check"],
+        "documentation": ["swagger", "openapi", "api documentation", "api spec"],
+        "containerization": ["docker", "container", "kubernetes", "k8s"],
+        "ci_cd": ["ci/cd", "continuous integration", "continuous deployment", "github actions", "pipeline"],
+        "performance": ["performance", "optimization", "bottleneck", "profiling", "caching"],
+        "legacy": ["legacy", "technical debt", "refactor", "modernization", "migration path"],
+        "realtime": ["real-time", "realtime", "websocket", "socket.io", "push notification"],
+        "pdf_documents": ["pdf generation", "document generation", "certificate", "policy document"],
+        "email": ["email", "sendgrid", "transactional email", "notification"],
+        "sms": ["sms", "text message", "twilio"],
+        "payments": ["payment processing", "stripe", "billing", "invoice", "premium"],
+        "insurance": ["insurance", "underwriting", "policy", "premium", "endorsement", "renewal", "claim"],
+    }
+
+    new_tags = set(signals.get("tags", []) if isinstance(signals.get("tags"), list) else signals.get("tags", set()))
+    docs_keywords_found = []
+
+    for signal_name, probes in docs_probes.items():
+        if any(p in combined for p in probes):
+            new_tags.add(signal_name)
+            # Track which docs-specific keywords were found for reporting
+            matched_probes = [p for p in probes if p in combined]
+            docs_keywords_found.extend(matched_probes[:2])
+
+    signals["tags"] = list(new_tags)
+    signals["docs_keywords"] = docs_keywords_found[:15]  # top docs-derived keywords
+
+    # Re-derive keywords to include new tags
+    keywords = set(signals.get("keywords", []))
+    keywords.update(new_tags)
+    signals["keywords"] = list(keywords)
 
     return signals
 
@@ -483,9 +553,13 @@ def main():
     with open(graph_path) as f:
         graph = json.load(f)
 
-    # Step 1: Extract signals
+    # Step 1: Extract signals from knowledge graph
     signals = extract_signals(graph)
     project_name = graph.get("metadata", {}).get("projectName", target.name)
+
+    # Step 1b: Enrich signals from docs/ folder (if it exists)
+    docs_dir = target / "docs"
+    signals = extract_docs_signals(docs_dir, signals)
 
     if not args.as_json:
         print(f"\nSkill Recommender — {project_name}")
@@ -497,6 +571,10 @@ def main():
         print(f"  Database:     {signals['database']}")
         print(f"  Layers:       {', '.join(signals['layers'][:5])}")
         print(f"  Tags:         {', '.join(list(signals['tags'])[:10])}")
+        if signals.get("docs_keywords"):
+            print(f"  Docs signals: {', '.join(signals['docs_keywords'][:8])}")
+        else:
+            print(f"  Docs signals: (no docs/ folder found)")
         print()
 
     # Step 2: Match custom registry
