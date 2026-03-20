@@ -338,11 +338,8 @@ This skill REQUIRES the knowledge graph as input. Always run `codebase-understan
 The visualizer generates Mermaid diagrams that can be embedded in or linked from the docs. Run both skills to get prose + diagrams.
 
 ### With `repo-augmentation` skill
-This skill is **Stage 2** of the 4-stage augmentation pipeline:
+This skill is **Stage 2** of the 3-stage augmentation pipeline:
 1. **Understand** → knowledge-graph.json
 2. **Document** → docs/ folder (this skill)
-3. **Equip** → install relevant skills (reads graph + docs for richer signals)
-4. **Generate** → CLI
+3. **Generate** → CLI
 
-### With `skill-recommender` skill
-The skill-recommender reads the generated `docs/` folder to extract additional domain signals (architecture patterns, integration details, design decisions) that improve skill matching accuracy beyond what the knowledge graph's structured metadata provides.

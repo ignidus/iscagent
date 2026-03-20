@@ -110,7 +110,7 @@ triggers:
 The `triggers` field makes skills self-describing and discoverable:
 
 - **`triggers.globs`** — File patterns. Maps to Cursor's `.mdc` `globs` frontmatter. Used for file-type-specific activation.
-- **`triggers.keywords`** — Task keywords. Used by Claude Code for intelligent skill suggestion. Used by the skill-recommender for matching against knowledge graphs.
+- **`triggers.keywords`** — Task keywords. Used by Claude Code for intelligent skill suggestion and matching against knowledge graphs.
 
 ### SKILL.md Body
 

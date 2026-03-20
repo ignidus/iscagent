@@ -41,13 +41,19 @@ skills:
   # AI & agent tooling
   - deep-research
   - mcp-server-patterns
-  # Repo augmentation (understand + document + visualize + CLI + skill discovery)
+  # Repo augmentation (understand + document + visualize + CLI)
   - codebase-understanding
   - docs-generation
   - knowledge-graph-visualizer
   - cli-generation
   - repo-augmentation
-  - skill-recommender
+  # Engineering workflow (inspired by gstack)
+  - review
+  - ship
+  - investigate
+  - careful
+  - retro
+  - plan-review
   # Multi-agent coordination
   - agent-coordination
   - agent-teams

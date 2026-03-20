@@ -24,19 +24,19 @@ End-to-end pipeline: understand a codebase deeply, then generate a CLI so agents
 ## Pipeline Overview
 
 ```
-STAGE 1: UNDERSTAND        STAGE 1.75: DOCUMENT+VISUALIZE    STAGE 1.5: EQUIP         STAGE 2: GENERATE
-(codebase-understanding)   (docs-generation +                 (skill-recommender)       (cli-generation)
+STAGE 1: UNDERSTAND        STAGE 1.75: DOCUMENT+VISUALIZE    STAGE 2: GENERATE
+(codebase-understanding)   (docs-generation +                 (cli-generation)
                             knowledge-graph-visualizer)
 
- Scan files                 Read knowledge graph               Read knowledge graph      Analyze knowledge graph
-      |                          |           |                      |                         |
- Analyze structure  ──>     Generate docs   Generate diagrams  Match signals to catalog  Design CLI commands
-      |              kg          |           |                      |                         |
- Map architecture    .json  docs/README.md  docs/diagrams/     Recommend skills          Implement CLI
-      |                     docs/modules/   architecture.md         |                         |
- Generate tour              docs/AGENTS.md  dependencies.md    Fetch & install matched   Test & document
-      |                     docs/onboard..  data-flow.md            |                         |
- knowledge-graph.json                       file-map.md        .claude/skills/*          Working CLI + SKILL.md
+ Scan files                 Read knowledge graph               Analyze knowledge graph
+      |                          |           |                      |
+ Analyze structure  ──>     Generate docs   Generate diagrams  Design CLI commands
+      |              kg          |           |                      |
+ Map architecture    .json  docs/README.md  docs/diagrams/     Implement CLI
+      |                     docs/modules/   architecture.md         |
+ Generate tour              docs/AGENTS.md  dependencies.md    Test & document
+      |                     docs/onboard..  data-flow.md            |
+ knowledge-graph.json                       file-map.md        Working CLI + SKILL.md
 ```
 
 ## Workflow
@@ -79,17 +79,6 @@ Using the knowledge graph, generate human-readable documentation and visual diag
    - `docs/diagrams/file-map.md` — directory tree with layer annotations
 
 These two skills can run in parallel since they both read from the knowledge graph independently.
-
-### Step 2.75: Equip (invoke skill-recommender skill)
-
-Using the knowledge graph, search the awesome-agent-skills catalog for relevant skills:
-
-1. **Extract signals** — languages, frameworks, layers, tooling from the graph
-2. **Match** against the catalog (549+ skills from Anthropic, Vercel, Cloudflare, Stripe, etc.)
-3. **Present** ranked recommendations grouped by confidence
-4. **Fetch** user-approved skills into `.claude/skills/`
-
-This ensures the agent has the right domain-specific skills installed BEFORE generating the CLI. For example, if the repo uses Next.js, the Vercel next-best-practices skill gets installed and can inform the CLI design.
 
 ### Step 3: Derive CLI Design from Knowledge Graph
 

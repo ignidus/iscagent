@@ -4,9 +4,11 @@ A skills library and repo augmentation pipeline for AI coding agents. Works with
 
 ## What It Does
 
-**25 reusable skills** that teach agents how to work — from coding standards and TDD to security reviews and API design.
+**32 reusable skills** across seven categories — core workflow, security, development patterns, AI tooling, repo augmentation, engineering workflow, and multi-agent coordination.
 
-**A repo augmentation pipeline** that scans any codebase, builds a knowledge graph, recommends relevant skills, and generates an agent-native CLI so agents (and humans) can interact with the repo programmatically.
+**An engineering workflow** inspired by [gstack](https://github.com/garrytan/gstack) — structured PR review, automated release pipelines, root-cause investigation, production safety guardrails, retrospectives, and architecture review.
+
+**A repo augmentation pipeline** that scans any codebase, builds a knowledge graph, generates documentation, and produces an agent-native CLI.
 
 ## Quick Start
 
@@ -18,12 +20,12 @@ cd iscagent
 ./export/install-skills.sh
 ```
 
-This installs all 25 skills to `~/.claude/skills/` — available in every Claude Code session.
+This installs all 32 skills to `~/.claude/skills/` — available in every Claude Code session.
 
 Install specific skills only:
 
 ```bash
-./export/install-skills.sh --skills "repo-augmentation,security-review,tdd-workflow"
+./export/install-skills.sh --skills "review,ship,investigate,careful"
 ```
 
 Install into a specific repo:
@@ -54,57 +56,17 @@ done
 
 See [export/cursor.md](export/cursor.md) for details on glob triggers and always-apply rules.
 
-## Repo Augmentation
-
-The augmentation pipeline makes any repo agent-native in three stages:
-
-```
-STAGE 1: UNDERSTAND              STAGE 1.5: EQUIP              STAGE 2: GENERATE
-(codebase-understanding)         (skill-recommender)            (cli-generation)
-
- Scan files                       Read knowledge graph           Analyze knowledge graph
- Analyze structure  ────>         Match signals to catalog       Design CLI commands
- Map architecture                 Recommend skills               Implement CLI
- Generate tour                    Fetch & install matched        Test & document
-
- .understand/                     .claude/skills/                tools/<cli-name>/
-   knowledge-graph.json             (relevant skills)              (agent-native CLI)
-```
-
-### Usage
-
-With skills installed, open Claude Code in any repo and say:
-
-```
-"Augment this repo"
-```
-
-Or step by step:
-
-```
-"Understand this codebase"          # produces .understand/knowledge-graph.json
-"Recommend skills for this repo"    # searches catalog, installs matches
-"Generate a CLI for this repo"      # produces tools/<cli-name>/
-```
-
-### Batch augmentation
-
-```bash
-for repo in ~/repos/project-a ~/repos/project-b; do
-  ./export/install-skills.sh --target "$repo"
-  claude -p "augment this repo" --cwd "$repo"
-done
-```
-
-### Custom skill registry
-
-The skill recommender searches two sources:
-1. **`custom-registry.yaml`** — hand-curated skills with precise match signals (searched first)
-2. **[awesome-agent-skills](https://github.com/VoltAgent/awesome-agent-skills)** — 549+ community and vendor skills (searched second)
-
-Add entries to `skills/skill-recommender/custom-registry.yaml` to cover gaps in the external catalog.
-
 ## Skills
+
+### Engineering Workflow
+| Skill | What it does |
+|-------|-------------|
+| `review` | Structured PR review — evidence-based findings, auto-fix vs ask classification, scope drift detection, infra-specific checks |
+| `ship` | Automated release pipeline — test, review, version, changelog, commit organization, PR creation |
+| `investigate` | Systematic root-cause debugging — no fixes without understanding first. Four phases: symptoms, patterns, hypotheses, fix |
+| `careful` | Destructive command safety guardrails — warns before terraform destroy, aws delete, git push --force, DROP TABLE, etc. |
+| `retro` | Engineering retrospective — git-based velocity analytics, DORA metrics, per-contributor breakdown, trend comparison |
+| `plan-review` | Architecture review before implementation — failure modes, scope boundaries, test strategy, cost impact |
 
 ### Core Workflow
 | Skill | What it does |
@@ -144,9 +106,10 @@ Add entries to `skills/skill-recommender/custom-registry.yaml` to cover gaps in 
 | Skill | What it does |
 |-------|-------------|
 | `codebase-understanding` | Build a knowledge graph from any codebase — scan, analyze, map architecture, generate guided tours |
-| `cli-generation` | Generate stateful, agent-native CLIs with dual output (human + JSON), backend bridging, session management |
-| `repo-augmentation` | End-to-end pipeline: understand a codebase → equip with skills → generate a CLI |
-| `skill-recommender` | Analyze a knowledge graph and recommend relevant skills from a custom registry + the [awesome-agent-skills](https://github.com/VoltAgent/awesome-agent-skills) catalog |
+| `docs-generation` | Transform a knowledge graph into a human-readable docs/ folder |
+| `knowledge-graph-visualizer` | Generate Mermaid diagrams from a knowledge graph |
+| `cli-generation` | Generate stateful, agent-native CLIs with dual output (human + JSON) |
+| `repo-augmentation` | End-to-end pipeline: understand → document → generate CLI |
 
 ### Multi-Agent Coordination
 | Skill | What it does |
@@ -154,6 +117,48 @@ Add entries to `skills/skill-recommender/custom-registry.yaml` to cover gaps in 
 | `agent-coordination` | Memory-based agent communication protocol — how agents hand off work through shared files |
 | `agent-teams` | Team composition templates per task type (bug fix, feature, refactor, security audit, infra change) |
 | `model-routing` | Decision framework for selecting the right model (Haiku/Sonnet/Opus) per task complexity |
+
+## Repo Augmentation Pipeline
+
+The augmentation pipeline makes any repo agent-native in three stages:
+
+```
+STAGE 1: UNDERSTAND              STAGE 2: DOCUMENT              STAGE 3: GENERATE
+(codebase-understanding)         (docs-generation)              (cli-generation)
+
+ Scan files                       Read knowledge graph           Analyze knowledge graph
+ Analyze structure  ────>         Generate docs/                 Design CLI commands
+ Map architecture                 Generate diagrams              Implement CLI
+ Generate tour                    Agent reference                Test & document
+
+ .understand/                     docs/                          tools/<cli-name>/
+   knowledge-graph.json             (markdown docs)                (agent-native CLI)
+```
+
+### Usage
+
+With skills installed, open Claude Code in any repo and say:
+
+```
+"Augment this repo"
+```
+
+Or step by step:
+
+```
+"Understand this codebase"          # produces .understand/knowledge-graph.json
+"Generate docs for this repo"       # produces docs/
+"Generate a CLI for this repo"      # produces tools/<cli-name>/
+```
+
+### Batch augmentation
+
+```bash
+for repo in ~/repos/project-a ~/repos/project-b; do
+  ./export/install-skills.sh --target "$repo"
+  claude -p "augment this repo" --cwd "$repo"
+done
+```
 
 ## Adding Your Own Skills
 
@@ -197,19 +202,20 @@ Skills follow the [Agent Skills](https://agentskills.io) standard.
 ```
 iscagent/
   agent.yaml              # Skill registry and model preferences
-  skills/                 # 25 reusable skill modules
+  skills/                 # 32 reusable skill modules
+    review/               # PR review workflow
+    ship/                 # Release pipeline
+    investigate/          # Root-cause debugging
+    careful/              # Safety guardrails
+    retro/                # Retrospective analytics
+    plan-review/          # Architecture review
     coding-standards/
-    tdd-workflow/
     security-review/
     codebase-understanding/
-    cli-generation/
-    repo-augmentation/
-    skill-recommender/
-      SKILL.md
-      custom-registry.yaml
     ...
   export/                 # Installation and export tools
     install-skills.sh     # Install skills to Claude Code or target repos
+    augment.sh            # Repo augmentation pipeline
     claude-code.md        # Claude Code export guide
     cursor.md             # Cursor export guide
   examples/               # Example configurations
@@ -226,9 +232,9 @@ iscagent/
 ## Credits
 
 - Structure inspired by [gitagent](https://github.com/open-gitagent/gitagent)
+- Engineering workflow skills inspired by [gstack](https://github.com/garrytan/gstack)
 - Skills sourced from [everything-claude-code](https://github.com/affaan-m/everything-claude-code)
 - Repo augmentation methodology extracted from [Understand-Anything](https://github.com/Lum1104/Understand-Anything) and [CLI-Anything](https://github.com/HKUDS/CLI-Anything)
-- Skill recommender catalog powered by [awesome-agent-skills](https://github.com/VoltAgent/awesome-agent-skills)
 
 ## License
 

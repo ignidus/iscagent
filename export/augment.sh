@@ -4,8 +4,7 @@
 # Orchestrates the full augmentation workflow:
 #   Stage 1: Understand — builds knowledge graph via Claude Code
 #   Stage 2: Document  — generates docs/ from knowledge graph via Claude Code
-#   Stage 3: Equip     — runs automated skill recommender (reads graph + docs)
-#   Stage 4: Generate  — generates agent-native CLI via Claude Code
+#   Stage 3: Generate  — generates agent-native CLI via Claude Code
 #
 # Usage:
 #   ./export/augment.sh <target-repo>
@@ -51,8 +50,7 @@ while [[ $# -gt 0 ]]; do
       echo "Pipeline:"
       echo "  Stage 1: codebase-understanding -> .understand/knowledge-graph.json"
       echo "  Stage 2: docs-generation -> docs/ (from knowledge graph)"
-      echo "  Stage 3: skill-recommender -> .claude/skills/ (reads graph + docs)"
-      echo "  Stage 4: cli-generation -> <project>-cli/"
+      echo "  Stage 3: cli-generation -> <project>-cli/"
       exit 0
       ;;
     -*)
@@ -167,34 +165,17 @@ Use the knowledge graph as the single source of truth. Write prose, not reformat
   echo "Docs generated: $DOCS_DIR/"
 fi
 
-# ─── Stage 3: Equip (Skill Recommender) ─────────────────────────
-
-echo ""
-echo "━━━ Stage 3: EQUIP ━━━"
-echo "Running automated skill recommender..."
-echo ""
-
-RECOMMEND_ARGS="$TARGET"
-if [ "$AUTO" = true ]; then
-  RECOMMEND_ARGS="$RECOMMEND_ARGS --auto"
-fi
-if [ "$DRY_RUN" = true ]; then
-  RECOMMEND_ARGS="$RECOMMEND_ARGS --dry-run"
-fi
-
-python3 "$SCRIPT_DIR/recommend-skills.py" $RECOMMEND_ARGS
-
-# ─── Stage 4: Generate CLI ──────────────────────────────────────
+# ─── Stage 3: Generate CLI ──────────────────────────────────────
 
 if [ "$SKIP_CLI" = true ]; then
   echo ""
-  echo "Stage 4: GENERATE — skipped"
+  echo "Stage 3: GENERATE — skipped"
 elif [ "$DRY_RUN" = true ]; then
   echo ""
-  echo "Stage 4: GENERATE — would run cli-generation (dry run)"
+  echo "Stage 3: GENERATE — would run cli-generation (dry run)"
 else
   echo ""
-  echo "━━━ Stage 4: GENERATE ━━━"
+  echo "━━━ Stage 3: GENERATE ━━━"
   echo "Generating agent-native CLI from knowledge graph..."
   echo ""
 
