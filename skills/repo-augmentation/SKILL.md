@@ -1,263 +1,304 @@
 ---
 name: repo-augmentation
-version: 1.0.0
-description: End-to-end pipeline that understands a codebase and generates an agent-native CLI for it. Chains codebase-understanding into cli-generation as a single workflow.
+version: 2.0.0
+description: End-to-end pipeline to augment any repository for AI-assisted development. Installs opinionated engineering workflows, generates documentation, and configures Claude Code or Cursor.
 author: iscmga
-tags: [repo-augmentation, codebase-analysis, cli, agent-native, automation, pipeline]
+tags: [repo-augmentation, onboarding, agent-native, automation, pipeline, claude-code, cursor]
 triggers:
   globs: []
-  keywords: [augment repo, augment repository, make repo agent-native, repo augmentation, understand and cli]
+  keywords: [augment repo, augment repository, make repo agent-native, repo augmentation, set up repo, onboard repo]
 ---
 
 # Repo Augmentation
 
-End-to-end pipeline: understand a codebase deeply, then generate a CLI so agents (and humans) can interact with it programmatically. Chains the `codebase-understanding` and `cli-generation` skills into a single coordinated workflow.
+Take any repository and make it fully agent-ready. This skill orchestrates the entire process: understand the codebase, generate documentation, install opinionated engineering workflows, and configure the target tool (Claude Code or Cursor).
+
+When you're done, an agent opening the repo will have everything it needs — project context, architectural understanding, coding standards, review workflows, release pipelines, safety guardrails, and investigation playbooks — all configured and ready to use.
 
 ## When to Activate
 
+- "Augment this repo"
+- "Set up this repo for Claude Code"
 - "Make this repo agent-native"
-- "Augment this repository"
-- "I want to understand this codebase and build a CLI for it"
-- When onboarding to a new project and wanting both understanding AND tooling
-- When preparing a repo for multi-agent workflows
+- "Onboard this codebase"
+- When preparing any repo for AI-assisted development
 
-## Pipeline Overview
+## Target Tool Detection
+
+Determine the target tool by checking what exists:
+
+| Signal | Target |
+|--------|--------|
+| `.claude/` directory exists or user says "Claude" | Claude Code |
+| `.cursor/` directory exists or user says "Cursor" | Cursor |
+| Both exist | Ask user which to configure |
+| Neither exists | Default to Claude Code |
+
+## Pipeline
 
 ```
-STAGE 1: UNDERSTAND        STAGE 1.75: DOCUMENT+VISUALIZE    STAGE 2: GENERATE
-(codebase-understanding)   (docs-generation +                 (cli-generation)
-                            knowledge-graph-visualizer)
+PHASE 1: UNDERSTAND          PHASE 2: DOCUMENT           PHASE 3: EQUIP              PHASE 4: CONFIGURE
+─────────────────            ────────────────             ──────────────              ──────────────────
+Scan the codebase            Generate docs/               Install skills              Write CLAUDE.md or
+Build knowledge graph        Architecture overview         Select based on             Cursor rules
+Map architecture             Onboarding guide              codebase signals            Project-specific
+Generate guided tour         Agent reference               Engineering workflow        instructions
 
- Scan files                 Read knowledge graph               Analyze knowledge graph
-      |                          |           |                      |
- Analyze structure  ──>     Generate docs   Generate diagrams  Design CLI commands
-      |              kg          |           |                      |
- Map architecture    .json  docs/README.md  docs/diagrams/     Implement CLI
-      |                     docs/modules/   architecture.md         |
- Generate tour              docs/AGENTS.md  dependencies.md    Test & document
-      |                     docs/onboard..  data-flow.md            |
- knowledge-graph.json                       file-map.md        Working CLI + SKILL.md
+.understand/                 docs/                        .claude/skills/ OR          CLAUDE.md OR
+  knowledge-graph.json         README.md                    .cursor/rules/              .cursor/rules/
+                               architecture.md                                          project.mdc
+                               onboarding.md
+                               AGENTS.md
+                               modules/
 ```
 
-## Workflow
+## Phase 1: Understand the Codebase
 
-### Step 1: Pre-flight
+Follow the `codebase-understanding` skill exactly.
 
-Check the target repo:
-- Is it a git repo? (required for incremental updates)
-- Does `.understand/knowledge-graph.json` already exist? (skip Stage 1 if current)
-- Does a CLI already exist? (extend rather than rebuild)
-- What languages/frameworks are used? (determines CLI technology choice)
-
-### Step 2: Understand (invoke codebase-understanding skill)
-
-Run the full codebase-understanding pipeline:
-
-1. **Scan** all source files, detect languages and frameworks
+1. **Scan** all source files — detect languages, frameworks, entry points
 2. **Analyze** in batches — extract functions, classes, imports, write summaries
-3. **Assemble** into unified graph with referential integrity
-4. **Map architecture** into 3-7 layers
-5. **Generate tour** from entry points outward
+3. **Assemble** into a unified knowledge graph with referential integrity
+4. **Map architecture** into 3-7 layers (API, Service, Data, Config, etc.)
+5. **Generate tour** — 10-15 steps from entry points outward
 
-Output: `.understand/knowledge-graph.json`
+**Output:** `.understand/knowledge-graph.json`
 
-### Step 2.5: Document & Visualize (invoke docs-generation + knowledge-graph-visualizer skills)
+**Skip if:** the knowledge graph already exists and `metadata.gitCommitHash` matches `HEAD`.
 
-Using the knowledge graph, generate human-readable documentation and visual diagrams:
+## Phase 2: Generate Documentation
 
-1. **docs-generation** — transforms the knowledge graph into a `/docs` folder:
-   - `docs/README.md` — project overview + table of contents
-   - `docs/architecture.md` — layers, patterns, tech stack
-   - `docs/modules/<layer>.md` — per-layer deep dives
-   - `docs/onboarding.md` — guided tour as prose narrative
-   - `docs/AGENTS.md` — agent-optimized quick reference
+Follow the `docs-generation` skill exactly.
 
-2. **knowledge-graph-visualizer** — generates Mermaid diagrams:
-   - `docs/diagrams/architecture.md` — layer overview diagram
-   - `docs/diagrams/dependencies.md` — module dependency graph
-   - `docs/diagrams/data-flow.md` — request/event flow
-   - `docs/diagrams/file-map.md` — directory tree with layer annotations
+Using the knowledge graph, generate:
 
-These two skills can run in parallel since they both read from the knowledge graph independently.
+- `docs/README.md` — project overview, tech stack, table of contents
+- `docs/architecture.md` — layers, dependency flow, design decisions
+- `docs/modules/<layer>.md` — one per architectural layer
+- `docs/onboarding.md` — guided tour as narrative prose
+- `docs/AGENTS.md` — structured reference optimized for LLM consumption
 
-### Step 3: Derive CLI Design from Knowledge Graph
+Optionally, follow `knowledge-graph-visualizer` to add Mermaid diagrams to `docs/diagrams/`.
 
-This is the bridge between understanding and generation. Read the knowledge graph and derive:
+**Skip if:** `docs/README.md` exists and its commit hash matches `HEAD`.
 
-| Graph Element | CLI Design Decision |
-|---------------|-------------------|
-| **Node types** (file, function, class) | Entity command groups (`<entity> list/show/create`) |
-| **Entry points** (high fan-out nodes) | Primary commands (most important operations) |
-| **Layers** (API, Service, Data) | Command group organization |
-| **Edge types** (imports, calls, configures) | Operation dependencies and ordering |
-| **Complexity ratings** | Which operations need confirmation prompts |
-| **Tour steps** | `help` command ordering and onboarding flow |
+## Phase 3: Install Skills
 
-Write the derivation to `.understand/cli-design.json`:
+Select and install skills based on what the codebase actually needs. Read the knowledge graph signals and match:
 
-```json
-{
-  "projectName": "my-project",
-  "cliName": "my-project-cli",
-  "commandGroups": [
-    {
-      "name": "api",
-      "description": "API endpoint operations",
-      "derivedFrom": "API layer in knowledge graph",
-      "commands": [
-        {"name": "list", "description": "List all API endpoints", "sourceNodes": ["src/routes/*.ts"]},
-        {"name": "test", "description": "Test an endpoint", "sourceNodes": ["src/routes/*.ts"]}
-      ]
-    }
-  ],
-  "entities": ["route", "middleware", "model", "migration"],
-  "backends": ["npm", "node", "prisma"],
-  "stateModel": {
-    "description": "What gets persisted in project JSON",
-    "fields": ["selectedEndpoint", "environment", "lastTestResult"]
-  }
-}
+### Always Install (every repo benefits)
+- `coding-standards` — code style and conventions
+- `review` — structured PR review
+- `ship` — release pipeline
+- `careful` — destructive command guardrails
+- `verification-loop` — iterative verify-fix cycle
+- `security-review` — security analysis
+
+### Install If Detected
+
+| Signal | Skills to Install |
+|--------|-------------------|
+| Test files exist (`test/`, `spec/`, `__tests__/`) | `tdd-workflow` |
+| Database layer (SQL, ORM, migrations) | `database-migrations`, `postgres-patterns` |
+| API layer (routes, controllers, endpoints) | `api-design` |
+| Frontend layer (React, Vue, Angular, templates) | `frontend-patterns` |
+| Backend layer (Express, Django, Laravel, Go) | `backend-patterns` |
+| Docker/container files | `docker-patterns` |
+| CI/CD config (`.github/workflows/`, Jenkinsfile) | `deployment-patterns` |
+| Infrastructure code (Terraform, CloudFormation) | `careful` (with infra-specific patterns), `plan-review` |
+| Complex architecture (>100 files, >5 layers) | `investigate`, `plan-review`, `retro` |
+| MCP server code | `mcp-server-patterns` |
+
+### Install Location
+
+**Claude Code:**
+```
+<repo>/.claude/skills/<skill-name>/SKILL.md
 ```
 
-### Step 4: Generate (invoke cli-generation skill)
-
-Using the CLI design from Step 3, run the cli-generation pipeline:
-
-1. **Design** command groups and state model
-2. **Implement** data layer, probe commands, mutation commands, backend bridge
-3. **Add** session management (undo/redo)
-4. **Add** REPL mode
-5. **Test** at all three layers (unit, integration, E2E)
-6. **Generate** SKILL.md for agent discoverability
-
-### Step 5: Validate the Augmentation
-
-Run a final validation pass:
-
-- [ ] Knowledge graph exists and passes integrity checks
-- [ ] CLI installs and runs without errors
-- [ ] `--json` flag works on all commands
-- [ ] REPL mode launches successfully
-- [ ] SKILL.md accurately describes available commands
-- [ ] At least one E2E test passes
-- [ ] CLI design traces back to knowledge graph nodes (no orphan commands)
-
-### Step 6: Commit Artifacts
-
-Stage the following for commit:
+**Cursor:**
 ```
-.understand/
-  knowledge-graph.json     # Codebase understanding
-  cli-design.json          # Bridge document (graph -> CLI design)
-docs/
-  README.md                # Project documentation entry point
-  architecture.md          # Architecture overview
-  onboarding.md            # Guided tour as prose
-  AGENTS.md                # Agent-optimized reference
-  modules/                 # Per-layer documentation
-  diagrams/                # Mermaid visualizations
-    architecture.md
-    dependencies.md
-    data-flow.md
-    file-map.md
-<project>-cli/             # Generated CLI
-  ...
-  skills/
-    SKILL.md               # Agent-discoverable skill definition
+<repo>/.cursor/rules/<skill-name>.mdc
+```
+
+For Cursor, wrap each SKILL.md with frontmatter:
+```yaml
+---
+description: "<skill description>"
+globs: <from skill triggers.globs, or omit>
+alwaysApply: false
+---
+<SKILL.md contents>
+```
+
+### How to Install
+
+Copy skill files from the iscagent source. If iscagent is cloned locally:
+```bash
+cp -r <iscagent>/skills/<skill-name>/SKILL.md <repo>/.claude/skills/<skill-name>/SKILL.md
+```
+
+If not available locally, write the skill content directly based on the skill definitions in this repository.
+
+## Phase 4: Configure Project Instructions
+
+Generate a project-specific instruction file that tells the agent everything it needs to know about THIS repo.
+
+### For Claude Code: Generate `CLAUDE.md`
+
+Create `<repo>/CLAUDE.md` at the project root:
+
+```markdown
+# <Project Name>
+
+## Overview
+<2-3 sentences from knowledge graph metadata — what this project does, primary language, framework>
+
+## Tech Stack
+- **Languages:** <from metadata.languages>
+- **Frameworks:** <from metadata.frameworks>
+- **Database:** <from metadata.database>
+- **Infrastructure:** <detected from file patterns>
+
+## Architecture
+<Brief layer summary from knowledge graph — e.g. "4-layer architecture: API → Service → Data → Config">
+
+## Development Commands
+<Detect from Makefile, package.json, composer.json, Pipfile, go.mod, etc.>
+
+| Command | What it does |
+|---------|-------------|
+| `<test command>` | Run tests |
+| `<lint command>` | Run linter |
+| `<build command>` | Build the project |
+| `<dev command>` | Start development server |
+
+## Coding Standards
+- <Inferred from existing code patterns: indentation, naming conventions, file organization>
+- <Framework-specific conventions detected>
+
+## Engineering Workflow
+- **Before making changes:** Run `plan-review` for changes touching >3 files
+- **During development:** Follow `coding-standards` and `tdd-workflow`
+- **Before committing:** Run `review` on your changes
+- **To release:** Use `ship` for automated test → review → PR pipeline
+- **For incidents:** Use `investigate` for systematic root-cause analysis
+- **Safety:** `careful` mode is active — destructive commands require confirmation
+- **Retrospectives:** Run `retro` for weekly velocity and quality insights
+
+## Project-Specific Rules
+<Any patterns detected that are specific to this codebase:>
+- <Import conventions>
+- <Test file naming patterns>
+- <Environment configuration approach>
+- <Deployment targets>
+```
+
+### For Cursor: Generate `.cursor/rules/project.mdc`
+
+```yaml
+---
+description: "Project-specific rules for <project name>"
+alwaysApply: true
+---
+<Same content as CLAUDE.md above, adapted for Cursor context>
+```
+
+## Phase 5: Validate
+
+Run a validation pass on everything generated:
+
+- [ ] `.understand/knowledge-graph.json` exists and is valid JSON
+- [ ] `docs/README.md` exists and has content
+- [ ] `docs/AGENTS.md` exists and lists all files from the knowledge graph
+- [ ] Skills are installed in the correct location for the target tool
+- [ ] Each installed skill has a valid SKILL.md with frontmatter
+- [ ] `CLAUDE.md` or `.cursor/rules/project.mdc` exists with project-specific config
+- [ ] Development commands in the config file are accurate (test at least one)
+- [ ] No broken internal links in docs
+
+## Phase 6: Commit
+
+Stage all artifacts and present to the user:
+
+```
+Artifacts generated:
+  .understand/knowledge-graph.json    — Codebase understanding
+  docs/                               — Human + agent documentation (N files)
+  .claude/skills/ OR .cursor/rules/   — N skills installed
+  CLAUDE.md OR .cursor/rules/project.mdc — Project configuration
+
+Ready to commit. Suggested message:
+  "feat: augment repo for AI-assisted development"
+```
+
+Wait for user confirmation before committing.
+
+## Full Example
+
+```
+User: "Augment this repo for Claude Code"
+
+Phase 1 — UNDERSTAND
+  Scanning 142 files...
+  Languages: PHP, JavaScript
+  Frameworks: Laravel, Vue.js, Tailwind
+  Database: MySQL (via Eloquent ORM)
+  Architecture: 5 layers — API, Service, Data, UI, Config
+  Knowledge graph: .understand/knowledge-graph.json ✓
+
+Phase 2 — DOCUMENT
+  docs/README.md ✓
+  docs/architecture.md ✓
+  docs/modules/api.md ✓
+  docs/modules/service.md ✓
+  docs/modules/data.md ✓
+  docs/modules/ui.md ✓
+  docs/modules/config.md ✓
+  docs/onboarding.md ✓
+  docs/AGENTS.md ✓
+
+Phase 3 — EQUIP (12 skills)
+  Always: coding-standards, review, ship, careful, verification-loop, security-review
+  Detected: tdd-workflow (phpunit found), database-migrations (migrations/ dir),
+            api-design (routes/ dir), frontend-patterns (Vue components),
+            backend-patterns (Laravel), postgres-patterns (Eloquent)
+
+Phase 4 — CONFIGURE
+  CLAUDE.md ✓ (test: php artisan test, lint: ./vendor/bin/pint, dev: php artisan serve)
+
+Phase 5 — VALIDATE
+  All checks pass ✓
+
+Ready to commit.
 ```
 
 ## Execution Strategy
 
-### For Small Repos (<50 files)
-
-Run everything sequentially in the main agent context:
-1. Scan + analyze + assemble (inline)
-2. Derive CLI design (inline)
-3. Generate CLI (inline)
-4. Test + validate (inline)
-
-### For Medium Repos (50-200 files)
-
-Use two subagents:
-1. **Understand agent** — runs full codebase-understanding pipeline
-2. **Main agent** — derives CLI design from graph, then generates CLI
-
-### For Large Repos (200+ files)
-
-Use parallel subagents:
-1. **Scanner agent** — file discovery (Stage 1)
-2. **N Analyzer agents** — parallel batch analysis (Stage 2)
-3. **Main agent** — assemble, architecture, tour (Stages 3-5)
-4. **CLI Design agent** — derive CLI design from graph
-5. **CLI Implementation agent** — generate CLI code
-6. **Test agent** — implement and run tests
-
-## Technology Selection
-
-Choose CLI framework based on the repo's primary language:
-
-| Repo Language | CLI Framework | Package Format |
-|--------------|---------------|----------------|
-| Python | Click | pip / PyPI |
-| TypeScript/JavaScript | Commander.js or oclif | npm |
-| Go | Cobra | go install |
-| Rust | Clap | cargo install |
-| Ruby | Thor | gem |
-| Any (fallback) | Python + Click | pip |
-
-## Example: Augmenting a Node.js API
-
-```
-Input: Express.js REST API with Prisma ORM
-
-Stage 1 Output (understanding):
-  - 47 files analyzed
-  - Layers: API (routes), Service (business logic), Data (Prisma models), Config
-  - Entry point: src/index.ts
-  - Key entities: User, Post, Comment
-  - Tour: index.ts -> routes/ -> services/ -> prisma/schema.prisma
-
-Stage 2 Bridge (cli-design.json):
-  - Command groups: user, post, comment, db, server
-  - Backends: node (server), prisma (migrations/queries)
-  - State: selected environment, last query result
-
-Stage 3 Output (CLI):
-  $ myapi-cli user list --json
-  $ myapi-cli db migrate
-  $ myapi-cli server start --port 3000
-  $ myapi-cli post create --title "Hello" --author-id 1
-  $ myapi-cli session undo
-```
+| Repo Size | Approach |
+|-----------|----------|
+| Small (<50 files) | Run all phases sequentially in main context |
+| Medium (50-200 files) | Use subagent for Phase 1 (understand), main for rest |
+| Large (200+ files) | Parallel subagents for scanning + analysis, main for assembly + config |
 
 ## Anti-Patterns
 
-- **Skipping understanding**: Don't generate a CLI without first building the knowledge graph. You'll miss entities and create an incomplete interface.
-- **CLI that doesn't match the codebase**: Every command group should trace back to a knowledge graph layer or entity. No orphan commands.
-- **Understanding without action**: A knowledge graph alone isn't actionable. The CLI is what makes it useful for agents.
-- **One-size-fits-all CLI**: Use the repo's own language for the CLI when possible. A Python CLI for a Go project creates unnecessary friction.
-- **Ignoring existing CLIs**: If the repo already has a CLI (Makefile, npm scripts, rake tasks), extend it rather than creating a parallel one.
+- **Installing every skill**: Only install what the codebase signals require. A Go CLI tool doesn't need `frontend-patterns`.
+- **Generic CLAUDE.md**: The config file must be specific to THIS repo — actual commands, actual conventions, actual architecture.
+- **Skipping validation**: Always verify that installed skills have valid SKILL.md files and that development commands actually work.
+- **Augmenting without understanding**: Don't install skills or write config without first building the knowledge graph. You'll miss what the repo actually needs.
+- **One config for both tools**: Claude Code and Cursor have different formats. Generate the right one for the target tool.
 
 ## Integration Points
 
-### With `agent-teams` skill
-Use the "Feature" team template for large repos:
-- Architect → derives CLI design from knowledge graph
-- Implementer → generates CLI code
-- Tester → writes and runs tests
-- Documenter → generates SKILL.md
+### With all engineering workflow skills
+This skill installs and configures `review`, `ship`, `investigate`, `careful`, `retro`, and `plan-review`. The CLAUDE.md it generates tells the agent when and how to use each one.
 
-### With `verification-loop` skill
-After generation, run the verification loop:
-- Execute all CLI commands
-- Verify JSON output parses correctly
-- Confirm undo/redo works
-- Validate SKILL.md accuracy
+### With `codebase-understanding` skill
+Phase 1 invokes this skill to build the knowledge graph.
 
-### With `model-routing` skill
-Route stages to appropriate models:
-- Scanning (Stage 1) → Haiku (mechanical file discovery)
-- Analysis (Stage 2) → Sonnet (structured extraction + summarization)
-- Architecture + Tour (Stage 4-5) → Opus (requires deep reasoning)
-- CLI Implementation → Sonnet (well-defined code generation)
-- Testing → Sonnet (standard test patterns)
+### With `docs-generation` skill
+Phase 2 invokes this skill to generate documentation.
+
+### With `project-guidelines-example` skill
+Use as a reference for what a good CLAUDE.md looks like. The generated config should be at least as detailed.
