@@ -99,6 +99,23 @@ skills:
       keywords: [api, rest, graphql, endpoint, openapi, swagger]
       layers: [API]
 
+  - name: database-migrations
+    description: Schema migration workflows for safe database changes
+    source: iscagent
+    path: skills/database-migrations/SKILL.md
+    match_signals:
+      keywords: [migration, schema, database, sql, alter table, migrate]
+      layers: [Data]
+      file_patterns: ["*.sql"]
+
+  - name: coding-standards
+    description: Code style, organization, naming conventions
+    source: iscagent
+    path: skills/coding-standards/SKILL.md
+    match_signals:
+      keywords: [standards, conventions, style, lint, eslint, phpcs, formatting]
+    always_recommend: true  # every repo benefits from coding standards
+
   - name: docs-generation
     description: Transform knowledge graph into human-readable /docs folder with markdown
     source: iscagent
